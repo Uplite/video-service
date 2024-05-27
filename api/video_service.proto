@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+option go_package = "./api/pb";
+
+service VideoServiceWriter {
+  rpc Upload(stream UploadRequest) returns (UploadResponse) {}
+}
+
+enum UploadStatus {
+  UPLOAD_STATUS_UNDEFINED = 0;
+  UPLOAD_STATUS_SUCCESS = 1;
+  UPLOAD_STATUS_ERROR = 2;
+}
+
+message UploadRequest {
+  string key = 1;
+  bytes data = 2;
+}
+
+message UploadResponse { UploadStatus upload_status = 1; }
