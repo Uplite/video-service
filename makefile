@@ -6,9 +6,9 @@ GOBIN    := $(shell go env GOPATH)/bin
 GOSRC    := $(shell find . -type f -name '*.go' -print) go.mod go.sum
 PROTOSRC := $(shell find . -type f -name '*.proto' -print)
 
-GOGEN     := $(GOBIN)/protoc-gen-go
-GOGRPC    := $(GOBIN)/protoc-gen-go-grpc
-VTPROTO   := $(GOBIN)/protoc-gen-go-vtproto
+GOGEN   := $(GOBIN)/protoc-gen-go
+GOGRPC  := $(GOBIN)/protoc-gen-go-grpc
+VTPROTO := $(GOBIN)/protoc-gen-go-vtproto
 
 PROTODIR := ./api
 PROTOGEN := $(PROTODIR)/pb
@@ -17,9 +17,21 @@ PROTODEF := $(patsubst $(PROTODIR)/%,%,$(PROTOSRC))
 VTFLAGS := marshal+unmarshal+size
 LDFLAGS := -w -s
 
+COUNT ?= 1
+
 # -----------------------------------------------------------------
 #  build
 
+.PHONY: all
+all: build
+
+.PHONY: build-writer
+build-writer: $(BINDIR)/$(WRITER)
+
+.PHONY: build-reader
+build-reader: $(BINDIR)/$(READER)
+
+.PHONY: build
 build: $(BINDIR)/$(READER) $(BINDIR)/$(WRITER)
 
 $(BINDIR)/$(READER): $(GOSRC)
@@ -33,11 +45,12 @@ $(BINDIR)/$(WRITER): $(GOSRC)
 
 .PHONY: test
 test:
-	go test -race -v ./...
+	go test -race -v -count=$(COUNT) ./...
 
 # -----------------------------------------------------------------
 #  generate
 
+.PHONY: generate
 generate: $(VTPROTO) $(GOGEN) $(GOGRPC) $(PROTODIR)/pb/.protogen
 
 $(PROTOGEN)/.protogen: $(PROTOSRC)
@@ -64,5 +77,6 @@ $(VTPROTO):
 # -----------------------------------------------------------------
 #  misc
 
+.PHONY: clean
 clean:
 	rm -rf $(PROTOGEN)
