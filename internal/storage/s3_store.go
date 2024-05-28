@@ -10,6 +10,7 @@ import (
 
 type s3Client interface {
 	PutObject(ctx context.Context, params *s3.PutObjectInput, optFns ...func(*s3.Options)) (*s3.PutObjectOutput, error)
+	HeadObject(ctx context.Context, params *s3.HeadObjectInput, optFns ...func(*s3.Options)) (*s3.HeadObjectOutput, error)
 	GetObject(ctx context.Context, params *s3.GetObjectInput, optFns ...func(*s3.Options)) (*s3.GetObjectOutput, error)
 	DeleteObject(ctx context.Context, params *s3.DeleteObjectInput, optFns ...func(*s3.Options)) (*s3.DeleteObjectOutput, error)
 	ListObjectsV2(ctx context.Context, params *s3.ListObjectsV2Input, optFns ...func(*s3.Options)) (*s3.ListObjectsV2Output, error)
@@ -28,11 +29,23 @@ func NewS3Store(client s3Client, bucket string) *s3Storage {
 	}
 }
 
-func (s *s3Storage) Put(ctx context.Context, key string, data io.Reader) error {
+func (s *s3Storage) Put(ctx context.Context, key, contentType string, data io.Reader) error {
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
+		Bucket:      aws.String(s.bucket),
+		Key:         aws.String(key),
+		ContentType: aws.String(contentType),
+		Body:        data,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *s3Storage) Head(ctx context.Context, key string) error {
+	_, err := s.client.HeadObject(ctx, &s3.HeadObjectInput{
 		Bucket: aws.String(s.bucket),
 		Key:    aws.String(key),
-		Body:   data,
 	})
 	if err != nil {
 		return err
@@ -62,9 +75,10 @@ func (s *s3Storage) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-func (s *s3Storage) List(ctx context.Context) ([]string, error) {
+func (s *s3Storage) List(ctx context.Context, prefix string) ([]string, error) {
 	resp, err := s.client.ListObjectsV2(ctx, &s3.ListObjectsV2Input{
 		Bucket: aws.String(s.bucket),
+		Prefix: aws.String(prefix),
 	})
 	if err != nil {
 		return nil, err

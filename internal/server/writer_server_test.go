@@ -8,23 +8,28 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/uplite/video-service/api/pb"
-	"github.com/uplite/video-service/internal/config"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+
+	"github.com/uplite/video-service/api/pb"
+	"github.com/uplite/video-service/internal/config"
 )
 
 type mockWriter struct{}
 
-func (m *mockWriter) Write(ctx context.Context, key string, data *bytes.Buffer) error {
+func (m *mockWriter) Write(ctx context.Context, key, contentType string, data *bytes.Buffer) error {
+	return nil
+}
+
+func (m *mockWriter) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
 func TestUpload(t *testing.T) {
 	grpcServer := grpc.NewServer()
 
-	videoServer := newVideoServer(&mockWriter{})
-	videoServer.registerServer(grpcServer)
+	writerServer := newWriterServer(&mockWriter{})
+	writerServer.registerServer(grpcServer)
 
 	lis, err := net.Listen("tcp", ":"+config.GetGrpcPort())
 	if err != nil {

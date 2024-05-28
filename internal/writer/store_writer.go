@@ -17,6 +17,10 @@ func NewStoreWriter(store storage.Store) *storeWriter {
 	}
 }
 
-func (r *storeWriter) Write(ctx context.Context, key string, buf *bytes.Buffer) error {
-	return r.store.Put(ctx, key, buf)
+func (r *storeWriter) Write(ctx context.Context, key, contentType string, buf *bytes.Buffer) error {
+	return r.store.Put(ctx, key, contentType, buf)
+}
+
+func (r *storeWriter) Delete(ctx context.Context, key string) error {
+	return r.store.Delete(ctx, key)
 }

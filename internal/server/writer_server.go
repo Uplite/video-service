@@ -2,21 +2,23 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"io"
 
 	"google.golang.org/grpc"
 
 	"github.com/uplite/video-service/api/pb"
+	"github.com/uplite/video-service/internal/videoutil"
 	"github.com/uplite/video-service/internal/writer"
 )
 
-type videoServer struct {
+type writerServer struct {
 	pb.UnimplementedVideoServiceWriterServer
-	writer writer.Writer
+	writer writer.WriterDeleter
 }
 
-func newVideoServer(writer writer.Writer) *videoServer {
-	return &videoServer{writer: writer}
+func newWriterServer(writer writer.WriterDeleter) *writerServer {
+	return &writerServer{writer: writer}
 }
 
 func newUploadError() *pb.UploadResponse {
@@ -27,7 +29,7 @@ func newUploadSuccess() *pb.UploadResponse {
 	return &pb.UploadResponse{UploadStatus: pb.UploadStatus_UPLOAD_STATUS_SUCCESS}
 }
 
-func (s *videoServer) Upload(stream pb.VideoServiceWriter_UploadServer) error {
+func (s *writerServer) Upload(stream pb.VideoServiceWriter_UploadServer) error {
 	ctx := stream.Context()
 
 	select {
@@ -38,6 +40,7 @@ func (s *videoServer) Upload(stream pb.VideoServiceWriter_UploadServer) error {
 
 	var buf bytes.Buffer
 	var videoKey string
+	var contentType string
 
 	for {
 		msg, err := stream.Recv()
@@ -52,10 +55,14 @@ func (s *videoServer) Upload(stream pb.VideoServiceWriter_UploadServer) error {
 			videoKey = msg.GetKey()
 		}
 
+		if contentType == "" {
+			contentType = videoutil.ContentTypeFrom(msg.GetContentType())
+		}
+
 		buf.Write(msg.GetData())
 	}
 
-	if err := s.writer.Write(ctx, videoKey, &buf); err != nil {
+	if err := s.writer.Write(ctx, videoKey, contentType, &buf); err != nil {
 		if sendErr := stream.SendAndClose(newUploadError()); sendErr != nil {
 			return sendErr
 		}
@@ -69,6 +76,13 @@ func (s *videoServer) Upload(stream pb.VideoServiceWriter_UploadServer) error {
 	return nil
 }
 
-func (s *videoServer) registerServer(g *grpc.Server) {
+func (s *writerServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+	if err := s.writer.Delete(ctx, req.GetKey()); err != nil {
+		return nil, err
+	}
+	return &pb.DeleteResponse{Ok: true}, nil
+}
+
+func (s *writerServer) registerServer(g *grpc.Server) {
 	pb.RegisterVideoServiceWriterServer(g, s)
 }
