@@ -25,7 +25,7 @@ func (m *mockWriter) Delete(ctx context.Context, key string) error {
 	return nil
 }
 
-func TestUpload(t *testing.T) {
+func TestWriterServer(t *testing.T) {
 	grpcServer := grpc.NewServer()
 
 	writerServer := newWriterServer(&mockWriter{})
@@ -50,22 +50,31 @@ func TestUpload(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 
-	stream, err := client.Upload(ctx)
-	assert.NoError(t, err)
+	t.Run("should upload", func(t *testing.T) {
+		stream, err := client.Upload(ctx)
+		assert.NoError(t, err)
 
-	req := &pb.UploadRequest{
-		Key:  "key_1",
-		Data: []byte{0, 1, 2, 3, 4, 5},
-	}
+		req := &pb.UploadRequest{
+			Key:         "key_1",
+			Data:        []byte{0, 1, 2, 3, 4, 5},
+			ContentType: pb.VideoContentType_VIDEO_CONTENT_TYPE_MP4,
+		}
 
-	err = stream.Send(req)
-	assert.NoError(t, err)
+		err = stream.Send(req)
+		assert.NoError(t, err)
 
-	err = stream.CloseSend()
-	assert.NoError(t, err)
+		err = stream.CloseSend()
+		assert.NoError(t, err)
 
-	res, err := stream.CloseAndRecv()
-	assert.NoError(t, err)
+		res, err := stream.CloseAndRecv()
+		assert.NoError(t, err)
 
-	assert.Equal(t, pb.UploadStatus_UPLOAD_STATUS_SUCCESS, res.GetUploadStatus())
+		assert.Equal(t, pb.UploadStatus_UPLOAD_STATUS_SUCCESS, res.GetUploadStatus())
+	})
+
+	t.Run("should delete", func(t *testing.T) {
+		res, err := client.Delete(ctx, &pb.DeleteRequest{Key: "video_1"})
+		assert.NoError(t, err)
+		assert.Equal(t, res.GetOk(), true)
+	})
 }
