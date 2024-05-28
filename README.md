@@ -7,14 +7,18 @@ A service for managing uploads and fetches for video content.
 Must have [Go compiler][1], [GNU Make][2], and [protoc][3]. Additional dependencies required for code generation will be installed via the make targets if they are not present in your $GOPATH. See the [makefile][4] for an exhaustive list of dependencies.
 
 ```sh
+    # Clone the repository
     git clone git@github.com:Uplite/video-service.git
     cd video-service
-    make
 
-    // Assuming you have a valid environment:
+    # Generate & Compile
+    make generate
+    make build
+
+    # Assuming you have a valid environment:
     ./bin/video-service-writer
 
-    // OR
+    # OR
     ./bin/video-service-reader
 ```
 
