@@ -4,6 +4,12 @@ option go_package = "./api/pb";
 
 service VideoServiceWriter {
   rpc Upload(stream UploadRequest) returns (UploadResponse) {}
+  rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+}
+
+service VideoServiceReader {
+  rpc GetOne(GetOneRequest) returns (GetOneResponse) {}
+  rpc GetMany(GetManyRequest) returns (GetManyResponse) {}
 }
 
 enum UploadStatus {
@@ -12,9 +18,29 @@ enum UploadStatus {
   UPLOAD_STATUS_ERROR = 2;
 }
 
+enum VideoContentType {
+  VIDEO_CONTENT_TYPE_UNDEFINED = 0;
+  VIDEO_CONTENT_TYPE_MP4 = 1;
+  VIDEO_CONTENT_TYPE_WEBM = 2;
+  VIDEO_CONTENT_TYPE_OGG = 3;
+}
+
 message UploadRequest {
   string key = 1;
   bytes data = 2;
+  VideoContentType content_type = 3;
 }
 
 message UploadResponse { UploadStatus upload_status = 1; }
+
+message DeleteRequest { string key = 1; }
+
+message DeleteResponse { bool ok = 1; }
+
+message GetOneRequest { string key = 1; }
+
+message GetOneResponse { string url = 1; }
+
+message GetManyRequest { string user_prefix = 1; }
+
+message GetManyResponse { repeated string urls = 1; }
