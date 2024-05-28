@@ -11,33 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-type extendsReader struct {
-	buf io.Reader
-}
-
 type storeMock struct {
-	data map[string]io.ReadCloser
-}
-
-func (e *extendsReader) Close() error {
-	return nil
-}
-
-func (e *extendsReader) Read(p []byte) (int, error) {
-	return e.buf.Read(p)
+	data map[string]io.Reader
 }
 
 func (s *storeMock) Put(ctx context.Context, key, contentType string, data io.Reader) error {
-	s.data[key] = &extendsReader{buf: data}
+	s.data[key] = data
 	return nil
-}
-
-func (s *storeMock) Get(ctx context.Context, key string) (io.ReadCloser, error) {
-	if exists, ok := s.data[key]; !ok {
-		return nil, errors.New("not found")
-	} else {
-		return exists, nil
-	}
 }
 
 func (s *storeMock) Head(ctx context.Context, prefix string) error {
@@ -57,7 +37,7 @@ func (s *storeMock) List(ctx context.Context, prefix string) ([]string, error) {
 }
 
 func TestStoreWriter(t *testing.T) {
-	s := &storeMock{data: make(map[string]io.ReadCloser)}
+	s := &storeMock{data: make(map[string]io.Reader)}
 	w := NewStoreWriter(s)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
