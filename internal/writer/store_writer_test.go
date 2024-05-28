@@ -1,4 +1,4 @@
-package recorder
+package writer
 
 import (
 	"bytes"
@@ -48,19 +48,19 @@ func (s *storeMock) List(ctx context.Context) ([]string, error) {
 	return nil, nil
 }
 
-func TestStoreRecorder(t *testing.T) {
+func TestStoreWriter(t *testing.T) {
 	s := &storeMock{data: make(map[string]io.ReadCloser)}
-	r := NewStoreRecorder(s)
+	r := NewStoreWriter(s)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*1)
 	defer cancel()
 
-	t.Run("should record", func(t *testing.T) {
+	t.Run("should write", func(t *testing.T) {
 		data := []byte{0, 1, 2, 3, 4, 5}
 		key := "key_1"
 
-		err := r.Record(ctx, key, bytes.NewBuffer(data))
-		assert.NoError(t, err, "unexpected error while recording")
+		err := r.Write(ctx, key, bytes.NewBuffer(data))
+		assert.NoError(t, err, "unexpected error while writing")
 
 		stored, err := r.store.Get(ctx, key)
 		assert.NoError(t, err, "unexpected error while getting stored data")
@@ -68,6 +68,6 @@ func TestStoreRecorder(t *testing.T) {
 		storedBytes, err := io.ReadAll(stored)
 		assert.NoError(t, err, "unexpected error while reading stored data")
 
-		assert.Equal(t, data, storedBytes, "recorded bytes do not match payload bytes")
+		assert.Equal(t, data, storedBytes, "written bytes do not match payload bytes")
 	})
 }
