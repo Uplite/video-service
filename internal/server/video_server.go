@@ -7,16 +7,16 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/uplite/video-service/api/pb"
-	"github.com/uplite/video-service/internal/recorder"
+	"github.com/uplite/video-service/internal/writer"
 )
 
 type videoServer struct {
 	pb.UnimplementedVideoServiceWriterServer
-	recorder recorder.Recorder
+	writer writer.Writer
 }
 
-func newVideoServer(recorder recorder.Recorder) *videoServer {
-	return &videoServer{recorder: recorder}
+func newVideoServer(writer writer.Writer) *videoServer {
+	return &videoServer{writer: writer}
 }
 
 func newUploadError() *pb.UploadResponse {
@@ -55,7 +55,7 @@ func (s *videoServer) Upload(stream pb.VideoServiceWriter_UploadServer) error {
 		buf.Write(msg.GetData())
 	}
 
-	if err := s.recorder.Record(ctx, videoKey, &buf); err != nil {
+	if err := s.writer.Write(ctx, videoKey, &buf); err != nil {
 		if sendErr := stream.SendAndClose(newUploadError()); sendErr != nil {
 			return sendErr
 		}

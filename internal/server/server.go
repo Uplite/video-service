@@ -8,8 +8,8 @@ import (
 	"google.golang.org/grpc"
 
 	"github.com/uplite/video-service/internal/config"
-	"github.com/uplite/video-service/internal/recorder"
 	"github.com/uplite/video-service/internal/storage"
+	"github.com/uplite/video-service/internal/writer"
 )
 
 type server struct {
@@ -22,7 +22,7 @@ func New() *server {
 
 	grpcServer := grpc.NewServer()
 
-	videoServer := newVideoServer(recorder.NewStoreRecorder(storage.NewS3Store(client, config.GetS3BucketName())))
+	videoServer := newVideoServer(writer.NewStoreWriter(storage.NewS3Store(client, config.GetS3BucketName())))
 	videoServer.registerServer(grpcServer)
 
 	return &server{
