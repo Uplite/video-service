@@ -21,7 +21,7 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
-	s := server.NewWriter()
+	s := server.NewReader()
 
 	go func() {
 		if err := s.Serve(); err != nil {
