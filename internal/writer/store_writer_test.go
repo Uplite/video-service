@@ -70,14 +70,6 @@ func TestStoreWriter(t *testing.T) {
 
 		err := w.Write(ctx, key, ct, bytes.NewBuffer(data))
 		assert.NoError(t, err, "unexpected error while writing")
-
-		stored, err := w.store.Get(ctx, key)
-		assert.NoError(t, err, "unexpected error while getting stored data")
-
-		storedBytes, err := io.ReadAll(stored)
-		assert.NoError(t, err, "unexpected error while reading stored data")
-
-		assert.Equal(t, data, storedBytes, "written bytes do not match payload bytes")
 	})
 
 	t.Run("should delete", func(t *testing.T) {
@@ -90,8 +82,5 @@ func TestStoreWriter(t *testing.T) {
 
 		err = w.Delete(ctx, key)
 		assert.NoError(t, err, "unexpected error while deleting stored data ")
-
-		_, err = w.store.Get(ctx, key)
-		assert.Error(t, err)
 	})
 }
