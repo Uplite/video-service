@@ -11,6 +11,11 @@ import (
 )
 
 func GetAwsConfig() aws.Config {
+	// Explicit inclusion to panic on missing environment variable
+	_ = readEnvVar("AWS_ACCESS_KEY_ID", "KEEPITSECRET")
+	_ = readEnvVar("AWS_SECRET_ACCESS_KEY", "KEEPITSAFE")
+	_ = readEnvVar("AWS_REGION", "middle-earth-1")
+
 	cfg, err := config.LoadDefaultConfig(context.TODO())
 	if err != nil {
 		log.Fatal(err)
