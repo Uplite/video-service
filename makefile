@@ -6,9 +6,10 @@ GOBIN    := $(shell go env GOPATH)/bin
 GOSRC    := $(shell find . -type f -name '*.go' -print) go.mod go.sum
 PROTOSRC := $(shell find . -type f -name '*.proto' -print)
 
-GOGEN   := $(GOBIN)/protoc-gen-go
-GOGRPC  := $(GOBIN)/protoc-gen-go-grpc
-VTPROTO := $(GOBIN)/protoc-gen-go-vtproto
+GOGEN     := $(GOBIN)/protoc-gen-go
+GOGRPC    := $(GOBIN)/protoc-gen-go-grpc
+VTPROTO   := $(GOBIN)/protoc-gen-go-vtproto
+GOIMPORTS := $(GOBIN)/goimports
 
 PROTODIR := ./api
 PROTOGEN := $(PROTODIR)/pb
@@ -74,9 +75,17 @@ $(GOGRPC):
 $(VTPROTO):
 	( cd /; go install github.com/planetscale/vtprotobuf/cmd/protoc-gen-go-vtproto@latest)
 
+$(GOIMPORTS):
+	(cd /; go install golang.org/x/tools/cmd/goimports@latest)
+
 # -----------------------------------------------------------------
 #  misc
+
+.PHONY: format
+format: $(GOIMPORTS)
+	GO111MODULE=on go list -f '{{.Dir}}' ./... | xargs $(GOIMPORTS) -w -local github.com/uplite/video-service
 
 .PHONY: clean
 clean:
 	rm -rf $(PROTOGEN)
+	rm -rf $(BIN)
