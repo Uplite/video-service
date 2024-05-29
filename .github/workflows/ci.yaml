@@ -38,6 +38,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     needs: generate
+    env:
+      AWS_CLOUDFRONT_URL: "https://i.website.io/videos"
+      GRPC_SERVER_PORT: "50051"
 
     steps:
       - name: checkout
