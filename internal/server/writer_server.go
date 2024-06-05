@@ -3,21 +3,26 @@ package server
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
-
-	"google.golang.org/grpc"
 
 	"github.com/uplite/video-service/api/pb"
 	"github.com/uplite/video-service/internal/videoutil"
 	"github.com/uplite/video-service/internal/writer"
 )
 
+const (
+	ErrNoContentType = "content_type cannot be empty"
+	ErrNoKey         = "key cannot be empty"
+)
+
 type writerServer struct {
 	pb.UnimplementedVideoServiceWriterServer
+
 	writer writer.WriterDeleter
 }
 
-func newWriterServer(writer writer.WriterDeleter) *writerServer {
+func NewWriterServer(writer writer.WriterDeleter) *writerServer {
 	return &writerServer{writer: writer}
 }
 
@@ -27,6 +32,14 @@ func newUploadError() *pb.UploadResponse {
 
 func newUploadSuccess() *pb.UploadResponse {
 	return &pb.UploadResponse{UploadStatus: pb.UploadStatus_UPLOAD_STATUS_SUCCESS}
+}
+
+func (s *writerServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
+	if err := s.writer.Delete(ctx, req.GetKey()); err != nil {
+		return nil, err
+	}
+
+	return &pb.DeleteResponse{Ok: true}, nil
 }
 
 func (s *writerServer) Upload(stream pb.VideoServiceWriter_UploadServer) error {
@@ -43,12 +56,12 @@ func (s *writerServer) Upload(stream pb.VideoServiceWriter_UploadServer) error {
 	var contentType string
 
 	for {
-		msg, err := stream.Recv()
-		if err != nil {
-			if err == io.EOF {
+		msg, recvErr := stream.Recv()
+		if recvErr != nil {
+			if recvErr == io.EOF {
 				break
 			}
-			return err
+			return recvErr
 		}
 
 		if videoKey == "" {
@@ -62,27 +75,17 @@ func (s *writerServer) Upload(stream pb.VideoServiceWriter_UploadServer) error {
 		buf.Write(msg.GetData())
 	}
 
+	if videoKey == "" {
+		return errors.New(ErrNoKey)
+	}
+
+	if contentType == "" {
+		return errors.New(ErrNoContentType)
+	}
+
 	if err := s.writer.Write(ctx, videoKey, contentType, &buf); err != nil {
-		if sendErr := stream.SendAndClose(newUploadError()); sendErr != nil {
-			return sendErr
-		}
-		return err
+		return stream.SendAndClose(newUploadError())
 	}
 
-	if err := stream.SendAndClose(newUploadSuccess()); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (s *writerServer) Delete(ctx context.Context, req *pb.DeleteRequest) (*pb.DeleteResponse, error) {
-	if err := s.writer.Delete(ctx, req.GetKey()); err != nil {
-		return nil, err
-	}
-	return &pb.DeleteResponse{Ok: true}, nil
-}
-
-func (s *writerServer) registerServer(g *grpc.Server) {
-	pb.RegisterVideoServiceWriterServer(g, s)
+	return stream.SendAndClose(newUploadSuccess())
 }

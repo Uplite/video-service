@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/encoding"
 	_ "google.golang.org/grpc/encoding/proto"
 
-	"github.com/uplite/video-service/internal/server"
+	"github.com/uplite/video-service/internal/service"
 )
 
 func init() {
@@ -21,15 +21,21 @@ func main() {
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
 
-	s := server.NewReader()
+	videoReader := service.NewVideoReaderService()
 
-	go func() {
-		if err := s.Serve(); err != nil {
-			log.Fatal(err)
-		}
-	}()
+	go startService(videoReader)
 
 	<-stop
 
+	stopService(videoReader)
+}
+
+func startService(s service.Service) {
+	if err := s.Serve(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func stopService(s service.Service) {
 	s.Close()
 }

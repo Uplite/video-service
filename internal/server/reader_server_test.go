@@ -30,8 +30,8 @@ func (m *mockReader) ReadMany(ctx context.Context, prefix string) ([]string, err
 func TestReaderServer(t *testing.T) {
 	grpcServer := grpc.NewServer()
 
-	readerServer := newReaderServer(&mockReader{})
-	readerServer.registerServer(grpcServer)
+	readerServer := NewReaderServer(&mockReader{})
+	pb.RegisterVideoServiceReaderServer(grpcServer, readerServer)
 
 	lis, err := net.Listen("tcp", ":"+config.GetGrpcPort())
 	if err != nil {
