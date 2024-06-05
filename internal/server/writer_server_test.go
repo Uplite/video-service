@@ -28,8 +28,8 @@ func (m *mockWriter) Delete(ctx context.Context, key string) error {
 func TestWriterServer(t *testing.T) {
 	grpcServer := grpc.NewServer()
 
-	writerServer := newWriterServer(&mockWriter{})
-	writerServer.registerServer(grpcServer)
+	writerServer := NewWriterServer(&mockWriter{})
+	pb.RegisterVideoServiceWriterServer(grpcServer, writerServer)
 
 	lis, err := net.Listen("tcp", ":"+config.GetGrpcPort())
 	if err != nil {
